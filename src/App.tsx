@@ -213,14 +213,13 @@ export default function App() {
     setActiveUrl(formattedUrl);
     setCurrentStepIndex(0);
 
-    // Orchestration Simulation
+    let isFetchingAudit = true;
     const runOrchestrator = async () => {
       await new Promise(r => setTimeout(r, 800)); setCurrentStepIndex(1); // Init -> Launch
       await new Promise(r => setTimeout(r, 1200)); setCurrentStepIndex(2); // Launch -> Navigate
-      await new Promise(r => setTimeout(r, 1000)); setCurrentStepIndex(3); // Navigate -> Metrics
-      await new Promise(r => setTimeout(r, 1500)); setCurrentStepIndex(4); // Metrics -> Audit
-      await new Promise(r => setTimeout(r, 2000)); setCurrentStepIndex(5); // Audit -> AI
-      // Index 5 is the final step
+      await new Promise(r => setTimeout(r, 1500)); setCurrentStepIndex(3); // Navigate -> Metrics
+      await new Promise(r => setTimeout(r, 1000)); if (isFetchingAudit) setCurrentStepIndex(4); // Metrics -> Audit 
+      // Stays on 4 until Lighthouse completes
     };
     runOrchestrator();
 
@@ -296,7 +295,9 @@ export default function App() {
       }
 
       const apiResults: LighthouseResult = await response.json();
+      isFetchingAudit = false;
       setResults(apiResults);
+      setCurrentStepIndex(5); // Now start AI Generation step
       
       setHistory(prev => [{ url: formattedUrl, results: apiResults, date: new Date().toISOString() }, ...prev.slice(0, 9)]);
 
@@ -361,6 +362,8 @@ export default function App() {
           ]
         });
       }
+      
+      setCurrentStepIndex(6); // Complete the pipeline
     } catch (err: any) {
       console.error('Audit Error:', err);
       setError(err.message || 'Failed to fetch performance data. Please check the URL and try again.');
@@ -449,58 +452,70 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen font-sans bg-[#0F172A] relative overflow-hidden">
-      {/* Ultra-Premium Mesh Gradient Background */}
-      <div className="mesh-gradient" />
-      
+    <div className="flex min-h-screen font-sans bg-background selection:bg-brand-primary/10">
       <Sidebar 
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen} 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        darkMode={darkMode}
       />
       
-      <main className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${isSidebarOpen ? 'pl-[280px]' : 'pl-[80px]'}`}>
-        <div className="sticky top-0 z-50">
-          <Header 
-            activeUrl={activeUrl}
-            isManualMode={isManualMode}
-            setIsManualMode={setIsManualMode}
-            isComparisonMode={isComparisonMode}
-            setIsComparisonMode={setIsComparisonMode}
-            isSlimMode={isSlimMode}
-            setIsSlimMode={setIsSlimMode}
-            isSidebarOpen={isSidebarOpen}
-            setIsSidebarOpen={setIsSidebarOpen}
-            handleTest={handleTest}
-            handleShare={handleShare}
-            setUrl={setUrl}
-            url={url}
-          />
-        </div>
+      <main className={`flex-1 min-w-0 transition-all duration-300 ${isSidebarOpen ? 'pl-[260px]' : 'pl-[80px]'} bg-background flex flex-col`}>
+        <Header 
+          activeUrl={activeUrl}
+          isManualMode={isManualMode}
+          setIsManualMode={setIsManualMode}
+          manualText={manualText}
+          setManualText={setManualText}
+          isComparisonMode={isComparisonMode}
+          setIsComparisonMode={setIsComparisonMode}
+          isSlimMode={isSlimMode}
+          setIsSlimMode={setIsSlimMode}
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          handleTest={handleTest}
+          handleShare={handleShare}
+          setUrl={setUrl}
+          url={url}
+          isLoading={isLoading}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+          setActiveTab={setActiveTab}
+        />
         
-        <div className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8 no-scrollbar scroll-smooth">
+        <div className="flex-1 p-8 sm:p-12 overflow-y-auto no-scrollbar scroll-smooth">
           <AnimatePresence mode="wait">
             {activeTab === 'dashboard' && (
               <motion.div 
                 key="dashboard"
-                initial={{ opacity: 0, scale: 0.98, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: -10 }}
-                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                className="space-y-8 max-w-[1700px] mx-auto"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="max-w-[1440px] mx-auto space-y-8"
               >
-                {/* A. Audit Pipeline (Top Center) */}
-                <AuditOrchestrator 
-                  isLoading={isLoading} 
-                  currentStepIndex={currentStepIndex} 
-                />
+                {/* Upper Grid: Pipeline + Viewport Configuration */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Audit Pipeline Card */}
+                  <div className="bg-surface border border-border rounded-xl p-8 shadow-sm">
+                    <div className="mb-8">
+                      <h2 className="text-lg font-bold">Audit Pipeline</h2>
+                      <p className="text-xs text-muted-foreground font-medium">Real-time Orchestration</p>
+                    </div>
+                    <AuditOrchestrator 
+                      isLoading={isLoading} 
+                      currentStepIndex={currentStepIndex} 
+                    />
+                  </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                  {/* B & C. DeviceSimulator & Live Preview (Center) */}
-                  <div className={isComparisonMode ? "lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6" : "lg:col-span-8"}>
+                  {/* Viewport & Simulation Card */}
+                  <div className="bg-surface border border-border rounded-xl p-8 shadow-sm">
+                    <div className="mb-8">
+                      <h2 className="text-lg font-bold">Simulation & Viewport</h2>
+                      <p className="text-xs text-muted-foreground font-medium">Configure test environment</p>
+                    </div>
                     <DevicePreview 
-                      activeDevice={DEVICES.find(d => d.id === (isComparisonMode ? comparisonDeviceIds[0] : activeDevice.id)) || DEVICES[0]}
+                      activeDevice={activeDevice}
                       setActiveDeviceId={handleDeviceChange}
                       customWidth={customWidth}
                       setCustomWidth={setCustomWidth}
@@ -537,66 +552,80 @@ export default function App() {
                       results={results}
                     />
                   </div>
-
-                  {/* D & E. Scores & Core Web Vitals (Right) */}
-                  <div className="lg:col-span-4 space-y-6">
-                    <AuditReport 
-                      results={results}
-                      isLoading={isLoading}
-                      downloadPDF={downloadPDF}
-                      scrollToHistory={scrollToHistory}
-                      aiInsight={aiInsight}
-                      activeUrl={activeUrl}
-                      reportRef={reportRef}
-                      darkMode={darkMode}
-                      isInsightModalOpen={isInsightModalOpen}
-                      setIsInsightModalOpen={setIsInsightModalOpen}
-                      isSlimMode={isSlimMode}
-                    />
-
-                    {/* F. AI Insights Panel */}
-                    {results && aiInsight && (
-                      <PerformanceInsights insight={aiInsight} darkMode={darkMode} />
-                    )}
-
-                    {/* G. Recent Audits (Compact) */}
-                    {!isLoading && history.length > 0 && (
-                      <div className="glass-card rounded-[2rem] p-6 hidden lg:block border-white/5 bg-white/[0.02]">
-                        <h3 className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-4">Benchmarking History</h3>
-                        <div className="space-y-3">
-                          {history.slice(0, 3).map((item, idx) => (
-                            <button 
-                              key={idx}
-                              onClick={() => {
-                                setUrl(item.url);
-                                setActiveUrl(item.url);
-                                setResults(item.results);
-                              }}
-                              className="w-full text-left p-4 rounded-2xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all flex items-center justify-between group"
-                            >
-                              <div className="overflow-hidden">
-                                <p className="text-xs font-bold text-white truncate group-hover:text-brand-primary transition-colors">{item.url.replace(/^https?:\/\//, '')}</p>
-                                <p className="text-[10px] text-white/30 font-mono mt-0.5">{new Date(item.date).toLocaleDateString()}</p>
-                              </div>
-                              <div className="flex items-center gap-1.5 ml-4">
-                                <span className={`text-[10px] font-mono font-bold ${
-                                  item.results.details.performance > 90 ? 'text-emerald-400' : 
-                                  item.results.details.performance > 50 ? 'text-amber-400' : 'text-red-400'
-                                }`}>
-                                  {item.results.details.performance}
-                                </span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </div>
+
+                {/* Audit Report Section */}
+                {results && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="space-y-8"
+                  >
+                    <div className="bg-surface border border-border rounded-xl shadow-sm">
+                      <AuditReport 
+                        results={results}
+                        isLoading={isLoading}
+                        downloadPDF={downloadPDF}
+                        scrollToHistory={scrollToHistory}
+                        aiInsight={aiInsight}
+                        activeUrl={activeUrl}
+                        reportRef={reportRef}
+                        darkMode={darkMode}
+                        isInsightModalOpen={isInsightModalOpen}
+                        setIsInsightModalOpen={setIsInsightModalOpen}
+                        isSlimMode={isSlimMode}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Benchmarking History (Simplified for Dashboard) */}
+                {!isLoading && history.length > 0 && (
+                  <div className="bg-surface border border-border rounded-xl p-8 shadow-sm">
+                    <div className="flex items-center justify-between mb-8">
+                      <div>
+                        <h3 className="text-base font-bold">Benchmarking History</h3>
+                        <p className="text-xs text-muted-foreground font-medium truncate max-w-[300px]">Node Analysis: {activeUrl || 'All Clusters'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-end justify-between gap-4 h-[160px] pb-6 border-b border-border">
+                      {history.slice(0, 7).reverse().map((item, idx) => (
+                        <div key={idx} className="flex-1 flex flex-col items-center gap-3 group relative h-full justify-end">
+                          {/* Score Label on Hover or for Active */}
+                          <div className={`absolute -top-6 left-1/2 -translate-x-1/2 transition-opacity duration-300 ${item.url === activeUrl ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                            <span className="text-[10px] font-bold bg-foreground text-background px-1.5 py-0.5 rounded shadow-sm">
+                              {item.results.performance}
+                            </span>
+                          </div>
+
+                          <div 
+                            className={`w-full max-w-[40px] rounded-t-lg transition-all duration-700 relative ${item.url === activeUrl ? 'bg-blue-600 shadow-[0_-4px_12px_rgba(37,99,235,0.2)]' : 'bg-muted hover:bg-muted-foreground/10'}`}
+                            style={{ height: `${item.results.performance}%` }}
+                          />
+                          
+                          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter truncate w-full text-center">
+                            {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="flex justify-between mt-6 px-1">
+                       <div className="flex items-center gap-2">
+                         <div className="w-2 h-2 rounded-full bg-muted" />
+                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Historical Results</span>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         <div className="w-2 h-2 rounded-full bg-blue-600" />
+                         <span className="text-[10px] font-bold text-foreground uppercase tracking-widest">Selected Stream</span>
+                       </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
-
-
             )}
+
 
             {activeTab === 'history' && (
               <motion.div 

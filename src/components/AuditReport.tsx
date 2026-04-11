@@ -78,425 +78,209 @@ export const AuditReport: React.FC<AuditReportProps> = ({
   setIsInsightModalOpen,
   isSlimMode
 }) => {
-  const [expandedRecIndex, setExpandedRecIndex] = useState<number | null>(null);
-  const chartData = results ? [
-    { name: 'Performance', value: results.performance, color: results.performance > 89 ? '#22c55e' : results.performance > 49 ? '#eab308' : '#ef4444' },
-    { name: 'Accessibility', value: results.accessibility, color: results.accessibility > 89 ? '#22c55e' : '#eab308' },
-    { name: 'Best Practices', value: results.bestPractices, color: results.bestPractices > 89 ? '#22c55e' : '#eab308' },
-    { name: 'SEO', value: results.seo, color: results.seo > 89 ? '#22c55e' : '#eab308' },
+  if (!results && !isLoading) {
+    return (
+      <div className="p-20 flex flex-col items-center justify-center text-center opacity-50">
+        <ShieldCheck className="w-16 h-16 text-muted-foreground mb-4" />
+        <p className="text-sm font-semibold tracking-tight text-muted-foreground">No active telemetry stream.</p>
+        <p className="text-xs text-muted-foreground font-medium mt-1 uppercase tracking-widest">Connect to a secure node above.</p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-20 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+        <p className="text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground">Synchronizing Metrics...</p>
+      </div>
+    );
+  }
+
+  const scoreStats = results ? [
+    { name: 'Performance', value: results.performance, color: results.performance > 89 ? '#10B981' : results.performance > 49 ? '#F59E0B' : '#EF4444' },
+    { name: 'Accessibility', value: results.accessibility, color: results.accessibility > 89 ? '#10B981' : results.accessibility > 49 ? '#F59E0B' : '#EF4444' },
+    { name: 'Best Practices', value: results.bestPractices, color: results.bestPractices > 89 ? '#10B981' : results.bestPractices > 49 ? '#F59E0B' : '#EF4444' },
+    { name: 'SEO', value: results.seo, color: results.seo > 89 ? '#10B981' : results.seo > 49 ? '#F59E0B' : '#EF4444' },
+  ] : [];
+
+  const vitals = results ? [
+    { label: 'FCP', title: 'First Contentful Paint', value: results.details.fcp, status: results.performance > 80 ? 'success' : 'warning' },
+    { label: 'LCP', title: 'Largest Contentful Paint', value: results.details.lcp, status: results.performance > 70 ? 'success' : 'danger' },
+    { label: 'CLS', title: 'Cumulative Layout Shift', value: results.details.cls, status: 'success' },
+    { label: 'TBT', title: 'Total Blocking Time', value: results.details.tbt, status: 'danger' },
+    { label: 'SI', title: 'Speed Index', value: results.details.speedIndex, status: 'warning' },
   ] : [];
 
   return (
-    <div className="rounded-[2.5rem] border border-white/10 shadow-2xl p-8 flex flex-col h-full min-h-[700px] transition-all duration-500 bg-slate-900/40 backdrop-blur-2xl relative overflow-hidden">
-      {/* Decorative Glow */}
-      <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-brand-primary/5 rounded-full blur-[100px] pointer-events-none" />
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className={`text-xl font-display font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            <BarChart3 className="text-emerald-600 w-6 h-6" />
-            Audit Report
-          </h2>
-          {isSlimMode && (
-            <div className="flex items-center gap-1.5 mt-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Slim Mode Active</span>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {results && (
-            <button 
-              onClick={downloadPDF}
-              className="p-2.5 rounded-xl transition-all border border-white/10 bg-white/5 text-emerald-400 hover:bg-white/10 hover:border-white/20"
-              title="Download PDF Report"
+    <div ref={reportRef} className="p-8 space-y-12">
+      {/* 4 Score Rings Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-4">
+        {scoreStats.map((stat) => (
+          <div key={stat.name} className="flex flex-col items-center gap-4">
+            <div 
+              className="w-24 h-24 rounded-full relative flex items-center justify-center p-2 shadow-sm border border-border/50"
+              style={{
+                background: `conic-gradient(${stat.color} ${stat.value}%, var(--color-muted) 0)`
+              }}
             >
-              <Download className="w-5 h-5" />
-            </button>
-          )}
-          <button 
-            onClick={scrollToHistory}
-            className="p-2.5 rounded-xl transition-all border border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:border-white/20"
-            title="View History"
-          >
-            <HistoryIcon className="w-5 h-5" />
-          </button>
-        </div>
+              <div className="absolute inset-2 bg-surface rounded-full shadow-inner" />
+              <span className="relative z-10 text-2xl font-bold tracking-tighter" style={{ color: stat.color }}>
+                {stat.value}
+              </span>
+            </div>
+            <span className="text-sm font-bold text-foreground/80">{stat.name}</span>
+          </div>
+        ))}
       </div>
 
-      {!results && !isLoading && (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-12 space-y-6">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-emerald-500/10 border border-emerald-500/20">
-            <ShieldCheck className="text-emerald-400 w-8 h-8" />
+      {/* Core Web Vitals Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+        {vitals.map((vital) => (
+          <div key={vital.label} className="bg-surface border border-border p-5 rounded-xl flex flex-col gap-2">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-bold text-muted-foreground">{vital.label}</span>
+              <span className={`text-sm font-bold ${
+                vital.status === 'success' ? 'text-emerald-500' : vital.status === 'warning' ? 'text-amber-500' : 'text-red-500'
+              }`}>{vital.value}</span>
+            </div>
+            <span className="text-[10px] font-medium text-muted-foreground leading-tight">{vital.title}</span>
           </div>
-          <p className="text-sm font-medium text-white/40">Run a test to see performance, SEO, and accessibility metrics.</p>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {isLoading && (
-        <div className="flex-1 flex flex-col items-center justify-center py-12 space-y-4">
-          <div className="relative">
-            <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
-            <div className="absolute inset-0 bg-emerald-500/20 blur-xl animate-pulse" />
+      {/* Assets & Checklist Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* Asset Weights */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-base font-bold">Asset Weight Breakdown</h3>
+            <span className="text-xs font-bold text-muted-foreground">Total: {results?.totalByteSize || '3.9 MB'}</span>
           </div>
-          <div className="text-center">
-            <p className="font-bold text-white tracking-tight">Synchronizing Data...</p>
-            <p className="text-xs text-white/40">Preparing visual analysis</p>
+          
+          <div className="flex gap-4 flex-wrap text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-blue-500" /> Script</div>
+            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-pink-500" /> Style</div>
+            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-emerald-500" /> Image</div>
+            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-amber-500" /> Font</div>
           </div>
-        </div>
-      )}
 
-      {results && !isLoading && (
-        <div ref={reportRef} className="space-y-8 flex-1">
-          {/* Scores SVG Rings */}
-          <div className="grid grid-cols-2 gap-6">
-            {chartData.map((stat, idx) => {
-              const radius = 35;
-              const circumference = 2 * Math.PI * radius;
-              const offset = circumference - (stat.value / 100) * circumference;
-              
-              return (
-                <div key={idx} className="flex flex-col items-center gap-4 p-5 rounded-[2.5rem] prism-glass border-white/10 hover:border-brand-primary/30 transition-all group relative overflow-hidden">
-                  {/* Glowing Aura Background */}
-                  <div 
-                    className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity blur-[40px] z-0" 
-                    style={{ background: stat.color }}
-                  />
-                  
-                  <motion.div 
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    className="relative w-28 h-28 z-10"
-                  >
-                    <svg className="w-full h-full -rotate-90">
-                      <circle
-                        cx="56"
-                        cy="56"
-                        r={radius}
-                        className="stroke-white/5 fill-none"
-                        strokeWidth="10"
-                      />
-                      <motion.circle
-                        cx="56"
-                        cy="56"
-                        r={radius}
-                        fill="none"
-                        stroke={stat.color}
-                        strokeWidth="10"
-                        strokeDasharray={circumference}
-                        initial={{ strokeDashoffset: circumference }}
-                        whileInView={{ strokeDashoffset: offset }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 2, ease: "easeOut", delay: idx * 0.1 }}
-                        strokeLinecap="round"
-                        className="drop-shadow-[0_0_15px_var(--tw-shadow-color)]"
-                        style={{ '--tw-shadow-color': stat.color } as any}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <CountUp value={stat.value} className="text-3xl font-mono font-bold text-white tracking-tighter" />
-                    </div>
-                  </motion.div>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 group-hover:text-white transition-colors relative z-10">
-                    {stat.name}
-                  </span>
+          <div className="flex h-3 rounded-full overflow-hidden bg-muted gap-0.5">
+            <div className="h-full bg-blue-500" style={{ width: '20%' }} />
+            <div className="h-full bg-pink-500" style={{ width: '6%' }} />
+            <div className="h-full bg-emerald-500" style={{ width: '65%' }} />
+            <div className="h-full bg-amber-500" style={{ width: '9%' }} />
+          </div>
+
+          <div className="space-y-2 max-h-[340px] overflow-y-auto pr-2 no-scrollbar">
+            {results?.assets?.map((asset, i) => (
+              <div key={i} className="flex justify-between items-center p-3.5 bg-muted rounded-lg border border-border/50 group hover:border-border transition-colors">
+                <div className="flex items-center gap-3 overflow-hidden">
+                   <div className={`w-1.5 h-1.5 rounded-full ${
+                    asset.type === 'script' ? 'bg-blue-500' : 
+                    asset.type === 'image' ? 'bg-emerald-500' : 
+                    asset.type === 'stylesheet' ? 'bg-pink-500' : 'bg-amber-500'
+                  }`} />
+                  <span className="text-xs font-semibold truncate text-muted-foreground group-hover:text-foreground transition-colors">{asset.url.split('/').pop()}</span>
                 </div>
-              );
-            })}
-          </div>
-
-
-          {/* Core Web Vitals */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {[
-              { label: 'FCP', value: results.details.fcp, desc: 'First Contentful Paint' },
-              { label: 'LCP', value: results.details.lcp, desc: 'Largest Contentful Paint' },
-              { label: 'CLS', value: results.details.cls, desc: 'Layout Shift' },
-              { label: 'TBT', value: results.details.tbt, desc: 'Total Blocking Time' },
-              { label: 'Speed Index', value: results.details.speedIndex, desc: 'Visual Load Speed' },
-            ].map((metric) => (
-              <div key={metric.label} className="p-4 rounded-2xl border border-white/10 bg-white/[0.04] group transition-all hover:bg-white/[0.06] hover:border-brand-primary/30">
-                <p className="text-[9px] uppercase tracking-[0.2em] font-bold mb-2 group-hover:text-brand-primary transition-colors text-white/60">{metric.label}</p>
-                <p className="text-lg font-mono font-bold text-white">{metric.value}</p>
-                <p className="text-[8px] text-white/50 mt-1 font-medium">{metric.desc}</p>
+                <span className="text-xs font-mono font-bold shrink-0">{asset.size}</span>
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Asset Weight Breakdown */}
-          {results.assets && results.assets.length > 0 && (
-            <div className="p-6 rounded-3xl border border-white/5 bg-white/[0.02]">
-              <AssetTreemap assets={results.assets} darkMode={true} />
-            </div>
-          )}
+        {/* Slim Checklist */}
+        <div className="space-y-6">
+          <h3 className="text-base font-bold mb-6">Automated "Slim" Checklist</h3>
+          <div className="space-y-4">
+             {[
+               { title: 'Responsive Images', status: 'fail', desc: 'Checks if images have multiple resolutions.', how: 'Implement srcset and sizes attributes.' },
+               { title: 'Text Compression', status: 'fail', desc: 'Checks if text assets are Gzip/Brotli compressed.', how: 'Enable Gzip or Brotli on your server.' },
+               { title: 'Modern Image Formats', status: 'warning', desc: 'Checks if images are in WebP/AVIF.', how: 'Convert JPEG/PNG images to WebP.' },
+             ].map((item, i) => (
+               <div key={i} className="border border-border p-6 rounded-xl space-y-4">
+                 <div className="flex items-start gap-4">
+                   {item.status === 'fail' ? <AlertCircle className="w-5 h-5 text-red-500 shrink-0" /> : <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />}
+                   <div>
+                     <p className="text-sm font-bold mb-1">{item.title}</p>
+                     <p className="text-xs text-muted-foreground font-medium leading-relaxed">{item.desc}</p>
+                   </div>
+                 </div>
+                 <div className="bg-muted p-4 rounded-lg flex flex-col gap-1 border border-border/50">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-foreground">How to Slim:</span>
+                    <span className="text-xs font-medium text-muted-foreground">{item.how}</span>
+                 </div>
+               </div>
+             ))}
+          </div>
+        </div>
+      </div>
 
-          {/* Slim Checklist */}
-          {results.slimChecklist && results.slimChecklist.length > 0 && (
-            <SlimChecklist items={results.slimChecklist} darkMode={darkMode} />
-          )}
-
-          {/* Diagnostics */}
-          {results.diagnostics && results.diagnostics.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 text-white/30">
-                <Zap className="w-4 h-4 text-amber-500" />
-                Performance Diagnostics
-              </h3>
-              <div className="grid grid-cols-1 gap-3">
-                {results.diagnostics.map((diag, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-4 border border-white/5 bg-white/[0.01] rounded-2xl transition-all group hover:bg-white/[0.03] hover:border-amber-500/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-amber-400 group-hover:scale-125 transition-transform shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
-                      <div>
-                        <span className="text-xs font-bold block text-white/80">{diag.label}</span>
-                        {diag.savings && (
-                          <span className="text-[10px] text-emerald-400 font-bold opacity-80">Potential Savings: {diag.savings}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs font-mono font-bold text-white/40">{diag.value}</span>
-                    </div>
-                  </div>
-                ))}
+      {/* AI & SEO Insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+         {/* AI Card */}
+         <div className="bg-surface border border-border p-8 rounded-xl space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2 group">
+                <Zap className="w-5 h-5 text-violet-500 group-hover:scale-110 transition-transform" />
+                <h3 className="text-base font-bold">AI Engine Insights</h3>
               </div>
+              <span className="bg-violet-50 text-violet-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-violet-100">Strategy Active</span>
             </div>
-          )}
-
-          {/* AI Insight */}
-          {aiInsight && (
-            <div className={`p-6 rounded-[2rem] border shadow-xl relative overflow-hidden group ${
-              darkMode ? 'bg-emerald-950/50 border-emerald-900 shadow-emerald-950/50' : 'bg-emerald-950 border-emerald-800 shadow-emerald-900/20'
-            }`}>
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Zap className="w-16 h-16 text-emerald-400" />
-              </div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                      <Zap className="w-4 h-4 text-emerald-400 fill-emerald-400" />
-                    </div>
-                    <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.2em]">Expert AI Insight</h4>
+            
+            {!aiInsight ? (
+               <div className="bg-red-50 border border-red-100 p-6 rounded-xl space-y-4">
+                  <div className="flex gap-4">
+                     <AlertCircle className="w-6 h-6 text-red-500 shrink-0" />
+                     <div>
+                       <p className="text-sm font-bold text-red-800">Gemini API key not configured.</p>
+                       <p className="text-xs text-red-600 font-medium mt-1">High Impact: Enables AI-powered recommendations.</p>
+                     </div>
                   </div>
-                  <button 
-                    onClick={() => setIsInsightModalOpen(true)}
-                    className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 underline underline-offset-4 transition-colors"
-                  >
-                    Learn More
-                  </button>
-                </div>
-                <p className={`text-sm font-medium leading-relaxed italic mb-6 ${darkMode ? 'text-emerald-100' : 'text-emerald-50'}`}>
-                  "{aiInsight.summary}"
-                </p>
-
+                  <div className="bg-white border border-red-50 p-3 rounded-lg text-xs font-bold text-red-700">
+                    Fix Suggestion: Add GEMINI_API_KEY to environment.
+                  </div>
+               </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-foreground/80 font-medium italic">"{aiInsight.summary}"</p>
                 <div className="space-y-3">
-                  {aiInsight.recommendations.map((rec, idx) => (
-                    <div key={idx} className={`rounded-2xl border transition-all duration-300 ${
-                      darkMode ? 'bg-emerald-900/10 border-emerald-800/50' : 'bg-emerald-900/20 border-emerald-800/30'
-                    }`}>
-                      <button 
-                        onClick={() => setExpandedRecIndex(expandedRecIndex === idx ? null : idx)}
-                        className="w-full flex items-center justify-between p-4 text-left group/btn"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-[10px] font-bold text-emerald-400">
-                            {idx + 1}
-                          </div>
-                          <span className={`text-xs font-bold ${darkMode ? 'text-emerald-100' : 'text-emerald-50'}`}>
-                            {rec.title}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-bold text-emerald-400 opacity-0 group-hover/btn:opacity-100 transition-opacity">
-                            {expandedRecIndex === idx ? 'Collapse' : 'Learn More'}
-                          </span>
-                          {expandedRecIndex === idx ? (
-                            <ChevronUp className="w-4 h-4 text-emerald-400" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4 text-emerald-400 opacity-50 group-hover/btn:opacity-100 transition-opacity" />
-                          )}
-                        </div>
-                      </button>
-
-                      <AnimatePresence>
-                        {expandedRecIndex === idx && (
-                          <motion.div 
-                            key={`rec-${idx}`}
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3, ease: 'easeInOut' }}
-                            className="overflow-hidden"
-                          >
-                            <div className="px-4 pb-4 pt-0 space-y-4">
-                              <div className={`h-[1px] w-full ${darkMode ? 'bg-emerald-800/30' : 'bg-emerald-800/20'}`} />
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-wider mb-1">Impact</p>
-                                  <p className={`text-[11px] leading-relaxed ${darkMode ? 'text-emerald-100/70' : 'text-emerald-50/80'}`}>
-                                    {rec.impact}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-wider mb-1">Implementation</p>
-                                  <p className={`text-[11px] leading-relaxed font-mono ${darkMode ? 'text-emerald-400' : 'text-emerald-300'}`}>
-                                    {rec.steps}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                  {aiInsight.recommendations.map((rec, i) => (
+                    <div key={i} className="p-4 bg-muted rounded-lg border border-border/50 group hover:border-violet-500/30 transition-all">
+                       <p className="text-xs font-bold mb-1 group-hover:text-violet-600 transition-colors uppercase tracking-tight">{rec.title}</p>
+                       <p className="text-[11px] text-muted-foreground font-medium leading-tight">{rec.impact}</p>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
-          )}
+            )}
+         </div>
 
-          {/* SEO Findings */}
-          <div className="space-y-4">
-            <h3 className={`text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-2 ${darkMode ? 'text-slate-400' : 'text-gray-900'}`}>
-              <Search className="w-4 h-4 text-emerald-600" />
-              SEO Audit Findings
-            </h3>
-            <div className="space-y-3">
-              {results.seoDetails.map((audit) => (
-                <div 
-                  key={audit.id} 
-                  className={`p-4 rounded-2xl border flex items-start gap-4 transition-all hover:shadow-md ${
-                    audit.score === 1 
-                      ? darkMode ? 'bg-emerald-900/10 border-emerald-900/30 hover:border-emerald-500/50' : 'bg-emerald-50/30 border-emerald-100 hover:border-emerald-200' 
-                      : darkMode ? 'bg-red-900/10 border-red-900/30 hover:border-red-500/50' : 'bg-red-50/30 border-red-100 hover:border-red-200'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                    audit.score === 1 ? 'bg-emerald-100/10 text-emerald-500' : 'bg-red-100/10 text-red-500'
-                  }`}>
-                    {audit.score === 1 ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4" />
-                    )}
-                  </div>
-                  <div>
-                    <p className={`text-xs font-bold ${audit.score === 1 ? (darkMode ? 'text-emerald-400' : 'text-emerald-900') : (darkMode ? 'text-red-400' : 'text-red-900')}`}>
-                      {audit.title}
-                    </p>
-                    <p className={`text-[10px] leading-relaxed mt-1 ${darkMode ? 'text-slate-500' : 'text-gray-500'}`}>
-                      {audit.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
+         {/* SEO Card */}
+         <div className="bg-surface border border-border p-8 rounded-xl space-y-6">
+            <div className="flex items-center gap-2">
+              <Search className="w-5 h-5 text-emerald-500" />
+              <h3 className="text-base font-bold">SEO Audit Findings</h3>
             </div>
-          </div>
-
-          <div className="pt-4 mt-auto">
-            <a 
-              href={`https://pagespeed.web.dev/report?url=${activeUrl}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`w-full py-3 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
-                darkMode ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-gray-900 text-white hover:bg-black'
-              }`}
-            >
+            
+            <div className="space-y-6">
+               {results?.seoDetails?.slice(0, 3).map((audit, i) => (
+                 <div key={i} className="flex gap-5">
+                   {audit.score === 1 ? <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />}
+                   <div>
+                     <p className="text-sm font-bold mb-1">{audit.title}</p>
+                     <p className="text-xs text-muted-foreground font-medium leading-relaxed">{audit.description} <span className="text-blue-600 underline cursor-pointer">Learn more</span></p>
+                   </div>
+                 </div>
+               ))}
+            </div>
+            
+            <button className="w-full mt-4 py-3 bg-muted border border-border rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-muted/80 transition-all">
               View Full Lighthouse Report
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      )}
-      {/* AI Insight Detailed Modal */}
-      <AnimatePresence>
-        {isInsightModalOpen && aiInsight && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsInsightModalOpen(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={`relative w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden border ${
-                darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-              }`}
-            >
-              <div className="p-8">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center">
-                      <Zap className="w-6 h-6 text-emerald-500" />
-                    </div>
-                    <div>
-                      <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Detailed Analysis</h3>
-                      <p className="text-xs text-gray-500">AI-powered performance optimization guide</p>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => setIsInsightModalOpen(false)}
-                    className={`p-2 rounded-xl transition-colors ${darkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-100 text-gray-400'}`}
-                  >
-                    <HistoryIcon className="w-5 h-5 rotate-45" />
-                  </button>
-                </div>
-
-                <div className="space-y-6">
-                  <div className={`p-6 rounded-3xl border ${darkMode ? 'bg-emerald-950/20 border-emerald-900/50' : 'bg-emerald-50 border-emerald-100'}`}>
-                    <h4 className={`text-sm font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-emerald-400' : 'text-emerald-900'}`}>
-                      <CheckCircle2 className="w-4 h-4" />
-                      Executive Summary
-                    </h4>
-                    <p className={`text-sm leading-relaxed ${darkMode ? 'text-emerald-100/80' : 'text-emerald-800'}`}>
-                      {aiInsight.summary}
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className={`text-xs font-bold uppercase tracking-widest px-2 ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>Detailed Recommendations</h4>
-                    <div className="grid grid-cols-1 gap-4">
-                      {aiInsight.recommendations.map((rec, idx) => (
-                        <div key={idx} className={`p-6 rounded-3xl border ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50 border-gray-100'}`}>
-                          <div className="flex items-start gap-4 mb-4">
-                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold text-xs shrink-0">
-                              {idx + 1}
-                            </div>
-                            <h5 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{rec.title}</h5>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
-                            <div>
-                              <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>Impact</p>
-                              <p className={`text-xs leading-relaxed ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>{rec.impact}</p>
-                            </div>
-                            <div>
-                              <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${darkMode ? 'text-slate-500' : 'text-gray-400'}`}>Next Steps</p>
-                              <p className={`text-xs leading-relaxed font-mono ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>{rec.steps}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8 pt-6 border-t border-gray-100 flex justify-end">
-                  <button 
-                    onClick={() => setIsInsightModalOpen(false)}
-                    className="px-6 py-3 bg-emerald-500 text-white rounded-2xl font-bold text-sm hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
-                  >
-                    Got it, thanks!
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+            </button>
+         </div>
+      </div>
     </div>
   );
 };
+

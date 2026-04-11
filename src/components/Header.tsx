@@ -56,115 +56,109 @@ export const Header: React.FC<HeaderProps> = ({
   isComparisonMode,
   setIsComparisonMode
 }) => {
-  const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1');
-
   return (
-    <header className="sticky top-0 z-40 transition-all duration-300 bg-black/20 backdrop-blur-xl border-b border-white/5 px-4 sm:px-6 py-4">
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3 w-full lg:w-auto">
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 rounded-xl transition-colors text-white/70 hover:bg-white/10"
-          >
-            {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500/10 border border-emerald-500/20">
-              <Zap className="text-emerald-400 w-5 h-5" />
+    <header className="bg-background border-b border-border px-8 py-6 sticky top-0 z-40">
+      <div className="max-w-[1440px] mx-auto flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-[28px] font-bold tracking-tight text-foreground leading-none">
+              Performance Suite
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest mt-1">Matrix Insight Engine</p>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {activeUrl && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-full text-xs font-semibold text-muted-foreground border border-border shadow-sm">
+                <Link2 className="w-3.5 h-3.5" />
+                {activeUrl}
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#ECFDF5] border border-[#A7F3D0] rounded-full text-xs font-semibold text-emerald-600 shadow-sm">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Secure Node Active
             </div>
-            <h1 className="text-lg font-bold tracking-tight text-white font-display hidden sm:block">Dashboard</h1>
+
+            <div className="flex items-center gap-1 ml-4 border-l border-border pl-4">
+              <button
+                onClick={() => setIsComparisonMode(!isComparisonMode)}
+                className={`p-2 rounded-lg transition-colors ${isComparisonMode ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted'}`}
+                title="Comparison Mode"
+              >
+                <Monitor className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsSlimMode(!isSlimMode)}
+                className={`p-2 rounded-lg transition-colors ${isSlimMode ? 'bg-emerald-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                title="Slim Mode"
+              >
+                <Zap className={`w-4 h-4 ${isSlimMode ? 'fill-current' : ''}`} />
+              </button>
+              <button
+                onClick={handleShare}
+                className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+                title="Share Report"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleTest} className="flex-1 max-w-2xl w-full flex flex-col gap-2">
-          <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
-            <div className="relative flex-1 group w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors text-white/60 group-focus-within:text-emerald-400" />
-              <input 
-                type="text" 
-                placeholder={isManualMode ? "Enter URL for reference" : "Enter URL (e.g., apple.com or localhost:8080)"}
-                className="w-full pl-12 pr-4 py-3 border border-white/5 rounded-2xl outline-none transition-all text-sm font-medium bg-white/5 focus:bg-white/10 focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 text-white"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button 
+        {/* Command Bar */}
+        <form onSubmit={handleTest} className="relative group max-w-2xl">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-blue-500 transition-colors">
+            <Search className="w-4 h-4" />
+          </div>
+          <input 
+            type="text" 
+            placeholder={isManualMode ? "Reference URL for analysis..." : "Enter URL to audit performance..."}
+            className="w-full bg-surface border border-border rounded-xl pl-11 pr-32 py-3 text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+          />
+          <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+             <button 
                 type="button"
                 onClick={() => setIsManualMode(!isManualMode)}
-                className={`px-4 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all border ${
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
                   isManualMode 
-                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' 
-                    : 'bg-white/10 border-white/10 text-white/70 hover:bg-white/20'
+                    ? 'bg-amber-500 text-white border-amber-600' 
+                    : 'bg-muted border-border text-muted-foreground hover:bg-muted/80'
                 }`}
               >
                 {isManualMode ? 'Manual' : 'Auto'}
               </button>
-              <button 
-                type="submit"
-                disabled={isLoading || !url || (isManualMode && !manualText)}
-                className="flex-1 sm:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-white/5 disabled:text-white/20 text-white rounded-2xl font-bold text-sm transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
-              >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isManualMode ? 'Analyze' : 'Integrate')}
-              </button>
-            </div>
+            <button 
+              type="submit"
+              disabled={isLoading || !url}
+              className="bg-foreground text-background px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-all disabled:opacity-20 active:scale-95"
+            >
+              {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" /> : 'Execute'}
+            </button>
           </div>
+
           {isManualMode && (
             <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="w-full"
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="absolute top-full left-0 right-0 mt-3 p-6 bg-surface border border-border rounded-xl shadow-xl z-50"
             >
+              <div className="flex items-center gap-2 mb-4">
+                <ShieldCheck className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-bold uppercase tracking-widest">Manual Data Entry</span>
+              </div>
               <textarea
                 value={manualText}
                 onChange={(e) => setManualText(e.target.value)}
-                placeholder="Paste your Lighthouse report text here..."
-                className="w-full h-32 p-4 border border-white/5 rounded-2xl outline-none transition-all text-xs font-mono resize-none bg-white/5 focus:bg-white/10 focus:border-amber-500/50 text-white"
+                placeholder="Paste JSON report here..."
+                className="w-full h-40 p-4 bg-muted border border-border rounded-lg outline-none text-xs font-mono resize-none focus:border-amber-500 transition-colors"
               />
             </motion.div>
           )}
         </form>
-
-        <div className="flex items-center gap-3 w-full lg:w-auto justify-center lg:justify-end">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-widest leading-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="hidden sm:inline">Secure Node Active</span>
-          </div>
-          
-          <button
-            onClick={() => setIsComparisonMode(!isComparisonMode)}
-            title={isComparisonMode ? "Single Device Mode" : "Comparison Mode"}
-            className={`p-2.5 rounded-xl transition-all ${
-              isComparisonMode 
-                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' 
-                : 'text-white/40 hover:bg-white/10'
-            }`}
-          >
-            <Monitor className="w-5 h-5" />
-          </button>
-          
-          <button
-            onClick={() => setIsSlimMode(!isSlimMode)}
-            title={isSlimMode ? "Disable Slim Mode" : "Enable Slim Mode"}
-            className={`p-2.5 rounded-xl transition-all ${
-              isSlimMode 
-                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' 
-                : 'text-white/40 hover:bg-white/10'
-            }`}
-          >
-            <Zap className={`w-5 h-5 ${isSlimMode ? 'fill-white' : ''}`} />
-          </button>
-
-          <button 
-            onClick={handleShare}
-            disabled={!activeUrl}
-            className="p-2.5 rounded-xl transition-colors disabled:opacity-50 text-white/40 hover:bg-white/10"
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
-        </div>
       </div>
     </header>
-
   );
 };
