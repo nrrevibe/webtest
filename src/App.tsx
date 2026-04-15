@@ -413,18 +413,38 @@ export default function App() {
       const response = await fetch('/api/screenshot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: activeUrl, width: activeDevice.width, height: activeDevice.height })
+        body: JSON.stringify({ 
+          url: activeUrl, 
+          width: activeDevice.width, 
+          height: activeDevice.height,
+          deviceScaleFactor: 2 
+        })
       });
-      const { screenshot } = await response.json();
-      setScreenshotPreviewUrl(screenshot);
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true });
+
+      if (!response.ok) throw new Error('Failed to fetch capture node from server.');
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      setScreenshotPreviewUrl(data.screenshot);
+      
+      // Wait for the overlay data URI to render in the DOM
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      const canvas = await html2canvas(previewRef.current, { 
+        scale: 2, 
+        useCORS: true,
+        backgroundColor: null,
+        allowTaint: true
+      });
+
       const link = document.createElement('a');
-      link.download = `screenshot.png`;
+      link.download = `responsive-audit-${new Date().getTime()}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Screenshot Error:', err);
+      setError(err.message || 'Failed to capture viewport screenshot.');
     } finally {
       setScreenshotPreviewUrl(null);
       setIsLoading(false);

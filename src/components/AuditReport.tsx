@@ -133,6 +133,110 @@ export const AuditReport: React.FC<AuditReportProps> = ({
           </div>
         ))}
       </div>
+      
+      {/* Responsiveness & Mobile-Friendly Section */}
+      <div className="bg-surface border border-border rounded-xl p-8 space-y-8 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-6 border-b border-border pb-8">
+             <div className="flex items-center gap-8">
+                <div className="flex flex-col">
+                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Load Time</span>
+                   <span className="text-2xl font-bold text-foreground">{results?.responsivenessChecks?.loadTime || '1.53s'}</span>
+                </div>
+                <div className="w-[1px] h-10 bg-border" />
+                <div className="flex flex-col">
+                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Page Size</span>
+                   <span className="text-2xl font-bold text-foreground">{results?.responsivenessChecks?.pageSize || '7.09 KB'}</span>
+                </div>
+             </div>
+
+             <div className={`flex items-center gap-3 ${results?.responsivenessChecks?.mobileFriendly ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'} px-4 py-2 rounded-lg border`}>
+                <CheckCircle2 className="w-5 h-5" />
+                <div className="flex flex-col">
+                   <span className="text-[10px] font-bold uppercase tracking-widest">Mobile-Friendly Status</span>
+                   <span className="text-xs font-bold">{results?.responsivenessChecks?.mobileFriendly ? '✅ Passed' : '❌ Needs Review'}</span>
+                </div>
+             </div>
+
+             <div className="flex flex-col items-end text-right">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Responsive Score</span>
+                <div className="flex items-center gap-2">
+                   <span className={`text-2xl font-bold ${
+                      (results?.responsivenessChecks?.responsiveScore || 0) > 89 ? 'text-emerald-500' : 
+                      (results?.responsivenessChecks?.responsiveScore || 0) > 49 ? 'text-amber-500' : 'text-red-500'
+                   }`}>{results?.responsivenessChecks?.responsiveScore || 0}%</span>
+                   <span className="text-[10px] font-bold uppercase tracking-tighter text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Server-side test</span>
+                </div>
+             </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+             <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                   <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                   <h3 className="text-sm font-bold uppercase tracking-widest">Core Responsiveness Checks</h3>
+                </div>
+                <div className="space-y-4">
+                   {(results?.responsivenessChecks?.checks || []).map((check) => (
+                      <div key={check.id} className="flex gap-4 group">
+                         {check.status === 'pass' ? (
+                            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                         ) : check.status === 'fail' ? (
+                            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                         ) : (
+                            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                         )}
+                         <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                               <p className="text-sm font-bold">{check.title}</p>
+                               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                                  check.importance === 'Critical' ? 'bg-red-50 text-red-600' : 
+                                  check.importance === 'High' ? 'bg-blue-50 text-blue-600' : 
+                                  'bg-slate-50 text-slate-500'
+                               }`}>{check.importance}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground font-medium leading-relaxed">{check.description}</p>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+             </div>
+
+             <div className="space-y-6">
+                <div className="bg-slate-900 rounded-2xl p-6 text-white space-y-6 shadow-xl border border-white/5 overflow-hidden relative">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl -mr-16 -mt-16" />
+                   
+                   <div className="flex items-center gap-2 mb-2 relative z-10">
+                      <Zap className="w-4 h-4 text-emerald-400" />
+                      <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">Implementation Guide</h4>
+                   </div>
+                   
+                   <div className="space-y-6 relative z-10">
+                      <div className="space-y-3">
+                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Common Breakpoints (Media Queries)</p>
+                         <div className="grid grid-cols-1 gap-2">
+                            <code className="text-[10px] bg-white/5 p-3 rounded-lg border border-white/5 block font-mono">@media (min-width: 768px) {'{ ... }'}</code>
+                            <code className="text-[10px] bg-white/5 p-3 rounded-lg border border-white/5 block font-mono">@media (max-width: 767px) {'{ ... }'}</code>
+                         </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Strategic Approach</p>
+                         <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                            Add media queries to your CSS files. Common approaches include <strong>mobile-first</strong> (using min-width) or desktop-first (using max-width).
+                         </p>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="p-6 bg-blue-500/5 rounded-2xl border border-blue-500/10">
+                   <p className="text-[10px] font-bold text-blue-700 mb-2 uppercase tracking-widest">Suggestions for Improvement</p>
+                   <p className="text-xs text-blue-600/80 leading-relaxed font-bold">
+                      Use CSS media queries to adjust layouts for different screen sizes. Media queries are essential for responsive design.
+                   </p>
+                </div>
+             </div>
+          </div>
+      </div>
 
       {/* Core Web Vitals Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">

@@ -155,9 +155,18 @@ export const DevicePreview: React.FC<DevicePreviewProps> = ({
             onChange={(e) => setActiveDeviceId(e.target.value)}
           >
             <option value="" disabled>Select Device</option>
-            {DEVICES.filter(d => d.category !== 'custom').map(d => (
-              <option key={d.id} value={d.id}>{d.name}</option>
-            ))}
+            <optgroup label="System Devices">
+              {DEVICES.filter(d => d.category !== 'custom').map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </optgroup>
+            {savedDevicePresets.length > 0 && (
+              <optgroup label="Custom Presets">
+                {savedDevicePresets.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
 
@@ -165,12 +174,20 @@ export const DevicePreview: React.FC<DevicePreviewProps> = ({
           <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg border border-border">
             <button 
               onClick={() => setIsRealisticMode(!isRealisticMode)}
-              className="flex items-center gap-2 group"
+              className="flex items-center gap-2 group mr-2 border-r border-border pr-3"
             >
               <div className={`w-7 h-4 rounded-full relative transition-all ${isRealisticMode ? 'bg-blue-600' : 'bg-slate-300'}`}>
                 <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-all ${isRealisticMode ? 'translate-x-3' : ''}`} />
               </div>
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Realistic</span>
+            </button>
+            <button 
+              onClick={() => setIsLandscape(!isLandscape)}
+              className={`p-1 rounded-md transition-all flex items-center gap-2 ${isLandscape ? 'bg-surface shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              title="Rotate Device"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-500 ${isLandscape ? 'rotate-90' : ''}`} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Rotate</span>
             </button>
           </div>
           
@@ -259,6 +276,15 @@ export const DevicePreview: React.FC<DevicePreviewProps> = ({
 
               {activeUrl ? (
                 <div className="w-full h-full relative">
+                  {screenshotPreviewUrl && (
+                    <motion.img 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      src={screenshotPreviewUrl} 
+                      className="absolute inset-0 w-full h-full object-cover z-[60]"
+                      alt="Screenshot Capture Overlay"
+                    />
+                  )}
                   {iframeError ? (
                     <div className="absolute inset-0 bg-slate-50 flex flex-col items-center justify-center p-8 text-center">
                       <ShieldAlert className="w-12 h-12 text-amber-500 mb-4" />

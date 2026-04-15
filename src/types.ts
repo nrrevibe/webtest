@@ -45,6 +45,19 @@ export interface LighthouseResult {
   assets?: AssetInfo[];
   performanceMetrics?: PerformanceMetrics;
   slimChecklist?: SlimChecklistItem[];
+  responsivenessChecks?: {
+    loadTime: string;
+    pageSize: string;
+    mobileFriendly: boolean;
+    responsiveScore: number;
+    checks: {
+      id: string;
+      title: string;
+      status: 'pass' | 'fail' | 'warning';
+      description: string;
+      importance: string;
+    }[];
+  };
 }
 
 export interface AssetInfo {
