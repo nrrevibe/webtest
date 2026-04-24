@@ -81,11 +81,8 @@ export class Scanner {
         }
       }
 
-      // We need either 2+ signals OR a strong confidence score (e.g. 40+)
-      // Special allowance for header-only fingerprints (like Nginx) which might only have 1 signal
-      const isHeaderOnly = fp.headers && !fp.html && !fp.scripts && !fp.globals;
-
-      if (matchedSignals >= 2 || confidenceScore >= 40 || (matchedSignals === 1 && isHeaderOnly)) {
+      // We need either 1+ reliable signal. If a signature matches, our dictionary is specific enough to trust it.
+      if (matchedSignals >= 1 || confidenceScore >= 20) {
         const finalConfidence = Math.min(confidenceScore, 100);
         results.push({
           category: fp.category,

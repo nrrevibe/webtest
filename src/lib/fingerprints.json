@@ -5,8 +5,23 @@
     "headers": { "x-pingback": "" },
     "scripts": ["wp-emoji-release"]
   },
+  "WooCommerce": {
+    "category": "Ecommerce",
+    "html": ["woocommerce", "class=\"woocommerce"],
+    "scripts": ["woocommerce"]
+  },
+  "Elementor": {
+    "category": "Page builder",
+    "html": ["elementor", "data-elementor-type"],
+    "scripts": ["elementor"]
+  },
+  "Slider Revolution": {
+    "category": "Widgets",
+    "html": ["rs-plugin", "rev_slider"],
+    "scripts": ["jquery.themepunch.revolution.min.js", "rbtools.min.js", "rs6.min.js"]
+  },
   "Shopify": {
-    "category": "CMS",
+    "category": "Ecommerce",
     "html": ["cdn.shopify.com", "<meta name=\"generator\" content=\"Shopify"],
     "scripts": ["shopify"],
     "globals": ["Shopify"]
@@ -31,6 +46,24 @@
     "category": "JavaScript frameworks",
     "html": ["ng-version", "ng-app"]
   },
+  "jQuery": {
+    "category": "JavaScript libraries",
+    "scripts": ["jquery.min.js", "jquery.js", "jquery-migrate", "jquery-ui"],
+    "globals": ["jQuery", "$"]
+  },
+  "GSAP": {
+    "category": "JavaScript libraries",
+    "scripts": ["gsap.min.js", "TweenMax"],
+    "globals": ["gsap", "TweenMax"]
+  },
+  "Moment.js": {
+    "category": "JavaScript libraries",
+    "scripts": ["moment.js", "moment.min.js"]
+  },
+  "Font Awesome": {
+    "category": "Font scripts",
+    "html": ["font-awesome", "fa-solid", "fa-brands"]
+  },
   "Google Analytics": {
     "category": "Analytics",
     "scripts": ["google-analytics.com", "googletagmanager.com/gtag"],
@@ -44,6 +77,10 @@
     "category": "Marketing tools",
     "scripts": ["js.hs-scripts.com", "hubspot"]
   },
+  "Phantom": {
+    "category": "Marketing tools",
+    "scripts": ["phantom.js"]
+  },
   "Cloudflare": {
     "category": "CDN",
     "headers": { "server": "cloudflare", "cf-ray": "" }
@@ -52,13 +89,26 @@
     "category": "CDN",
     "headers": { "x-amz-cf-id": "" }
   },
+  "Hostinger CDN": {
+    "category": "CDN",
+    "headers": { "x-hostinger-cdn": "", "server": "hostinger" }
+  },
   "Nginx": {
     "category": "Web servers",
     "headers": { "server": "nginx" }
   },
+  "LiteSpeed": {
+    "category": "Web servers",
+    "headers": { "server": "litespeed" }
+  },
   "Express": {
     "category": "Web frameworks",
     "headers": { "x-powered-by": "express" }
+  },
+  "PHP": {
+    "category": "Programming languages",
+    "headers": { "x-powered-by": "php" },
+    "html": [".php?"]
   },
   "Tailwind CSS": {
     "category": "UI frameworks",
@@ -67,5 +117,37 @@
   "Framer Motion": {
     "category": "JavaScript libraries",
     "html": ["framer-motion"]
+  },
+  "Webpack": {
+    "category": "Miscellaneous",
+    "scripts": ["webpack"]
+  },
+  "Splide": {
+    "category": "JavaScript libraries",
+    "scripts": ["splide.min.js"]
+  },
+  "Yoast SEO": {
+    "category": "SEO",
+    "html": ["yoast-seo", "yoast_seo"]
+  },
+  "RankMath SEO": {
+    "category": "SEO",
+    "html": ["rank-math", "rankmath"]
+  },
+  "Contact Form 7": {
+    "category": "WordPress plugins",
+    "html": ["wpcf7"]
+  },
+  "LiteSpeed Cache": {
+    "category": "Caching",
+    "html": ["litespeed_cache"]
+  },
+  "MediaElement.js": {
+    "category": "Video players",
+    "scripts": ["mediaelement-and-player"]
+  },
+  "WhatsApp Business Chat": {
+    "category": "Live chat",
+    "html": ["wa.me", "api.whatsapp.com"]
   }
 }

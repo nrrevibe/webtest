@@ -201,31 +201,37 @@ async function startServer() {
           requestLatencyMs: 0,
           downloadThroughputKbps: 0,
           uploadThroughputKbps: 0
+        },
+        disableFullPageScreenshot: true,
+      };
+
+      // Launch the scanner in parallel with Lighthouse to slash wall-clock time
+      const runTechScanner = async () => {
+        const techPage = await browser.newPage();
+        try {
+          const response = await techPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+          await new Promise(r => setTimeout(r, 500));
+          const result = await detectTechnologies(techPage, response);
+          logger.info(`Detected items for ${url}:`, result.map(t => t.name).join(', '));
+          return result;
+        } catch (detErr) {
+          logger.warn('Tech detection failed or timed out:', detErr);
+          return [];
+        } finally {
+          await techPage.close().catch(() => {});
         }
       };
 
-      const runnerResult = await lighthouse(url, options);
+      const [runnerResult, detectedTech] = await Promise.all([
+        lighthouse(url, options),
+        runTechScanner()
+      ]);
 
       if (!runnerResult) {
         throw new Error('Lighthouse audit failed to produce results');
       }
 
       const lhr = runnerResult.lhr;
-
-      // Detect Technologies using a fresh page to avoid shared state issues
-      const techPage = await browser.newPage();
-      try {
-        const response = await techPage.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-        // Small delay to allow JS to initialize global variables
-        await new Promise(r => setTimeout(r, 2000));
-        var detectedTech = await detectTechnologies(techPage, response);
-        logger.info(`Detected items for ${url}:`, detectedTech.map(t => t.name).join(', '));
-      } catch (detErr) {
-        logger.warn('Tech detection failed or timed out:', detErr);
-        var detectedTech = [];
-      } finally {
-        await techPage.close();
-      }
 
       // Extract scores
       const scores = {
