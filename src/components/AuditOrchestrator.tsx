@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, AlertCircle } from 'lucide-react';
 
 interface AuditStep {
   id: string;
@@ -20,31 +20,37 @@ const STEPS: AuditStep[] = [
 interface AuditOrchestratorProps {
   isLoading: boolean;
   currentStepIndex: number;
+  error?: string | null;
 }
 
-export const AuditOrchestrator: React.FC<AuditOrchestratorProps> = ({ isLoading, currentStepIndex }) => {
+export const AuditOrchestrator: React.FC<AuditOrchestratorProps> = ({ isLoading, currentStepIndex, error }) => {
   const [logs, setLogs] = useState<string[]>([]);
 
   useEffect(() => {
-    if (currentStepIndex >= 0 && currentStepIndex < STEPS.length) {
+    if (error) {
+      setLogs(prev => [...prev, `[CRITICAL_FAILURE] ${error}`, 'Aborting sequence. Please check server deployment requirements.']);
+    } else if (currentStepIndex >= 0 && currentStepIndex < STEPS.length) {
       const newLogs = STEPS[currentStepIndex].logs;
       setLogs(prev => [...prev, ...newLogs].slice(-10));
     } else if (!isLoading) {
       setLogs([]);
     }
-  }, [currentStepIndex, isLoading]);
+  }, [currentStepIndex, isLoading, error]);
 
   return (
     <div className="space-y-6">
       <div className="space-y-4">
         {STEPS.map((step, index) => {
-          const isComplete = index < currentStepIndex;
-          const isActive = index === currentStepIndex && isLoading;
+          const isComplete = index < currentStepIndex && !error;
+          const isActive = index === currentStepIndex && (isLoading || error);
+          const hasError = isActive && error;
           
           return (
             <div key={step.id} className="flex items-center gap-4 group">
               <div className="flex-shrink-0">
-                {isComplete ? (
+                {hasError ? (
+                  <AlertCircle className="w-[18px] h-[18px] text-red-500" />
+                ) : isComplete ? (
                   <CheckCircle2 className="w-[18px] h-[18px] text-emerald-500" />
                 ) : isActive ? (
                   <Loader2 className="w-[18px] h-[18px] text-blue-500 animate-spin" />
@@ -53,7 +59,7 @@ export const AuditOrchestrator: React.FC<AuditOrchestratorProps> = ({ isLoading,
                 )}
               </div>
               <span className={`text-sm font-semibold transition-colors ${
-                isActive ? 'text-foreground' : isComplete ? 'text-foreground/70' : 'text-muted-foreground'
+                hasError ? 'text-red-500' : isActive ? 'text-foreground' : isComplete ? 'text-foreground/70' : 'text-muted-foreground'
               }`}>
                 {step.label}
               </span>
@@ -62,14 +68,16 @@ export const AuditOrchestrator: React.FC<AuditOrchestratorProps> = ({ isLoading,
         })}
       </div>
 
-      <div className="bg-[#020817] rounded-xl p-6 font-mono text-[13px] text-slate-300 shadow-2xl flex flex-col gap-3 min-h-[160px] border border-white/5 relative overflow-hidden group">
+      <div className={`bg-[#020817] rounded-xl p-6 font-mono text-[13px] shadow-2xl flex flex-col gap-3 min-h-[160px] border relative overflow-hidden group ${error ? 'border-red-500/20' : 'border-white/5'}`}>
         {/* Decorative elements */}
-        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
-        <div className="absolute inset-0 bg-blue-500/[0.02] pointer-events-none" />
+        <div className={`absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-${error ? 'red' : 'blue'}-500/20 to-transparent`} />
+        <div className={`absolute inset-0 bg-${error ? 'red' : 'blue'}-500/[0.02] pointer-events-none`} />
         
         <AnimatePresence mode="popLayout">
           {logs.length > 0 ? (
-            logs.map((log, i) => (
+            logs.map((log, i) => {
+              const isErrorLog = log.startsWith('[CRITICAL_FAILURE]') || error;
+              return (
               <motion.div 
                 key={`${log}-${i}`}
                 initial={{ opacity: 0, x: -10 }}
@@ -79,10 +87,14 @@ export const AuditOrchestrator: React.FC<AuditOrchestratorProps> = ({ isLoading,
                 <span className="text-slate-600 shrink-0 select-none opacity-50">
                   {new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </span>
-                <span className={`leading-relaxed ${i === logs.length - 1 ? 'text-emerald-400 font-bold' : 'text-slate-300'}`}>
-                  <span className="text-blue-500 mr-2">›</span>
+                <span className={`leading-relaxed ${
+                  isErrorLog && i >= logs.length - 2 ? 'text-red-400 font-bold' 
+                  : i === logs.length - 1 && !error ? 'text-emerald-400 font-bold' 
+                  : 'text-slate-300'
+                }`}>
+                  <span className={`${error ? 'text-red-500' : 'text-blue-500'} mr-2`}>›</span>
                   {log}
-                  {i === logs.length - 1 && isLoading && (
+                  {i === logs.length - 1 && isLoading && !error && (
                     <motion.span 
                       animate={{ opacity: [1, 0] }}
                       transition={{ duration: 0.8, repeat: Infinity }}
@@ -91,7 +103,7 @@ export const AuditOrchestrator: React.FC<AuditOrchestratorProps> = ({ isLoading,
                   )}
                 </span>
               </motion.div>
-            ))
+            )})
           ) : (
             <div className="text-slate-600 flex flex-col items-center justify-center h-full text-center gap-3 py-4">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-800 animate-ping" />

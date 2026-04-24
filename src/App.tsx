@@ -217,10 +217,10 @@ export default function App() {
 
     let isFetchingAudit = true;
     const runOrchestrator = async () => {
-      await new Promise(r => setTimeout(r, 800)); setCurrentStepIndex(1); // Init -> Launch
-      await new Promise(r => setTimeout(r, 1200)); setCurrentStepIndex(2); // Launch -> Navigate
-      await new Promise(r => setTimeout(r, 1500)); setCurrentStepIndex(3); // Navigate -> Metrics
-      await new Promise(r => setTimeout(r, 1000)); if (isFetchingAudit) setCurrentStepIndex(4); // Metrics -> Audit 
+      await new Promise(r => setTimeout(r, 800)); if (!isFetchingAudit) return; setCurrentStepIndex(1); // Init -> Launch
+      await new Promise(r => setTimeout(r, 1200)); if (!isFetchingAudit) return; setCurrentStepIndex(2); // Launch -> Navigate
+      await new Promise(r => setTimeout(r, 1500)); if (!isFetchingAudit) return; setCurrentStepIndex(3); // Navigate -> Metrics
+      await new Promise(r => setTimeout(r, 1000)); if (!isFetchingAudit) return; setCurrentStepIndex(4); // Metrics -> Audit 
       // Stays on 4 until Lighthouse completes
     };
     runOrchestrator();
@@ -367,9 +367,16 @@ export default function App() {
       
       setCurrentStepIndex(6); // Complete the pipeline
     } catch (err: any) {
+      isFetchingAudit = false;
       console.error('Audit Error:', err);
-      setError(err.message || 'Failed to fetch performance data. Please check the URL and try again.');
+      // If error is Puppeteer/Browser related on a production bundle
+      if (err.message && err.message.toLowerCase().includes('failed to run audit') && !err.message.includes('URL')) {
+         setError(`Puppeteer failed to launch: the deployment environment may be missing Chromium dependencies. Or: ${err.message}`);
+      } else {
+         setError(err.message || 'Failed to fetch performance data. Please check the URL and try again.');
+      }
     } finally {
+      isFetchingAudit = false;
       setIsLoading(false);
       setIsSimulatingLoading(false);
     }
@@ -556,6 +563,7 @@ export default function App() {
                     <AuditOrchestrator 
                       isLoading={isLoading} 
                       currentStepIndex={currentStepIndex} 
+                      error={error}
                     />
                   </div>
 
