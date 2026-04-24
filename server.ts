@@ -6,16 +6,83 @@ import lighthouse from 'lighthouse';
 import puppeteer from 'puppeteer';
 import dotenv from 'dotenv';
 
+import { Scanner } from './src/lib/Scanner.js';
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const logger = {
+  info: (...args: any[]) => console.log(`[INFO] ${new Date().toISOString()}:`, ...args),
+  error: (...args: any[]) => console.error(`[ERROR] ${new Date().toISOString()}:`, ...args),
+  warn: (...args: any[]) => console.warn(`[WARN] ${new Date().toISOString()}:`, ...args),
+};
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
+
+  // Helper: Technology Fingerprinting Engine Detection
+  const scanner = new Scanner();
+
+  const detectTechnologies = async (page: any, response: any) => {
+    try {
+      // 1. Inspect Response Headers
+      const headers = response?.headers() || {};
+
+      // 2. Probing DOM and Global Scope
+      const domData = await page.evaluate(() => {
+        const html = document.documentElement.innerHTML;
+        const scripts = [...document.scripts].map(s => s.src);
+        // Note: Object.keys(window) might not capture all manually added globals on some implementations, 
+        // but it's the safest non-crashing way.
+        const globals = Object.keys(window);
+        const meta = [...document.querySelectorAll('meta')].map(m => ({ 
+          name: m.getAttribute('name') || '', 
+          content: m.getAttribute('content') || '' 
+        }));
+        return { html, scripts, ObjectKeys: globals, meta };
+      });
+
+      // We explicitly check for known framework globals since Object.keys(window) 
+      // might miss non-enumerable properties.
+      const explicitGlobals = await page.evaluate(() => {
+        const arr = [];
+        if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__) arr.push('__REACT_DEVTOOLS_GLOBAL_HOOK__');
+        if (window.__NEXT_DATA__) arr.push('__NEXT_DATA__');
+        if (window.__VUE__) arr.push('__VUE__');
+        if ((window as any).ga) arr.push('ga');
+        if ((window as any).gtag) arr.push('gtag');
+        if ((window as any).Shopify) arr.push('Shopify');
+        return arr;
+      });
+
+      const allGlobals = [...domData.ObjectKeys, ...explicitGlobals];
+
+      const scanInput = {
+        html: domData.html,
+        scripts: domData.scripts,
+        headers,
+        globals: allGlobals,
+        meta: domData.meta
+      };
+
+      const results = scanner.detect(scanInput);
+
+      // Structured log formatting based on the new Engine Requirements
+      const structuredOutput = scanner.getStructuredFormat(results);
+      logger.info('Technology Fingerprint Output:', structuredOutput);
+
+      return results;
+
+    } catch (e) {
+      logger.error('Detection Error:', e);
+      return [];
+    }
+  };
 
   // API Endpoint: Capture Screenshot
   app.post('/api/screenshot', async (req, res) => {
@@ -24,6 +91,8 @@ async function startServer() {
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
+
+    logger.info(`Capturing screenshot for: ${url} [${width}x${height}]`);
 
     let browser;
     try {
@@ -34,7 +103,8 @@ async function startServer() {
           '--disable-setuid-sandbox', 
           '--disable-gpu', 
           '--disable-dev-shm-usage',
-          '--disable-extensions'
+          '--disable-extensions',
+          '--hide-scrollbars'
         ]
       });
 
@@ -42,21 +112,28 @@ async function startServer() {
       await page.setViewport({ 
         width: width || 1280, 
         height: height || 800, 
-        deviceScaleFactor 
+        deviceScaleFactor: deviceScaleFactor || 2 
       });
 
       // Set a reasonable timeout and wait for network idle
-      await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+      try {
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+        // Extra wait for any animations or late-loading assets
+        await new Promise(r => setTimeout(r, 1000));
+      } catch (gotoErr) {
+        logger.warn(`Navigation timeout for ${url}, attempting to capture anyway.`);
+      }
       
       const screenshot = await page.screenshot({ 
         type: 'png',
         encoding: 'base64',
-        fullPage: false
+        fullPage: false,
+        omitBackground: true
       });
 
       res.json({ screenshot: `data:image/png;base64,${screenshot}` });
     } catch (err: any) {
-      console.error('Screenshot API Error:', err);
+      logger.error('Screenshot API Error:', err);
       res.status(500).json({ error: err.message || 'Failed to capture screenshot' });
     } finally {
       if (browser) {
@@ -135,12 +212,28 @@ async function startServer() {
 
       const lhr = runnerResult.lhr;
 
+      // Detect Technologies using a fresh page to avoid shared state issues
+      const techPage = await browser.newPage();
+      try {
+        const response = await techPage.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+        // Small delay to allow JS to initialize global variables
+        await new Promise(r => setTimeout(r, 2000));
+        var detectedTech = await detectTechnologies(techPage, response);
+        logger.info(`Detected items for ${url}:`, detectedTech.map(t => t.name).join(', '));
+      } catch (detErr) {
+        logger.warn('Tech detection failed or timed out:', detErr);
+        var detectedTech = [];
+      } finally {
+        await techPage.close();
+      }
+
       // Extract scores
       const scores = {
         performance: Math.round((lhr.categories.performance?.score || 0) * 100),
         accessibility: Math.round((lhr.categories.accessibility?.score || 0) * 100),
         bestPractices: Math.round((lhr.categories['best-practices']?.score || 0) * 100),
         seo: Math.round((lhr.categories.seo?.score || 0) * 100),
+        detectedTech,
         details: {
           fcp: lhr.audits['first-contentful-paint']?.displayValue || 'N/A',
           lcp: lhr.audits['largest-contentful-paint']?.displayValue || 'N/A',
@@ -194,7 +287,6 @@ async function startServer() {
             description: 'Checks if images are served in WebP or AVIF formats.',
             remedy: 'Convert JPEG/PNG images to WebP or AVIF.'
           },
-          }
         ],
         responsivenessChecks: {
           loadTime: lhr.audits['interactive']?.displayValue || lhr.audits['speed-index']?.displayValue || 'N/A',
@@ -257,7 +349,7 @@ async function startServer() {
 
       res.json(scores);
     } catch (err: any) {
-      console.error('Lighthouse Error:', err);
+      logger.error('Lighthouse Error:', err);
       res.status(500).json({ error: err.message || 'Failed to run audit' });
     } finally {
       if (browser) {
@@ -282,7 +374,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    logger.info(`Server running on http://localhost:${PORT}`);
   });
 }
 

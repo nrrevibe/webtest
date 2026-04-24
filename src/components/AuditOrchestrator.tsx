@@ -62,24 +62,40 @@ export const AuditOrchestrator: React.FC<AuditOrchestratorProps> = ({ isLoading,
         })}
       </div>
 
-      <div className="bg-[#020817] rounded-lg p-5 font-mono text-[13px] text-slate-300 shadow-inner flex flex-col gap-2 min-h-[140px] border border-border/5">
+      <div className="bg-[#020817] rounded-xl p-6 font-mono text-[13px] text-slate-300 shadow-2xl flex flex-col gap-3 min-h-[160px] border border-white/5 relative overflow-hidden group">
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
+        <div className="absolute inset-0 bg-blue-500/[0.02] pointer-events-none" />
+        
         <AnimatePresence mode="popLayout">
           {logs.length > 0 ? (
             logs.map((log, i) => (
               <motion.div 
                 key={`${log}-${i}`}
-                initial={{ opacity: 0, x: -5 }}
+                initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-start gap-3"
+                className="flex items-start gap-4 relative z-10"
               >
-                <span className="text-slate-600 shrink-0">[{new Date().toLocaleTimeString([], { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }).toLowerCase()}]</span>
-                <span className={`${i === logs.length - 1 ? 'text-emerald-400' : 'text-slate-300'}`}>{log}</span>
+                <span className="text-slate-600 shrink-0 select-none opacity-50">
+                  {new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+                <span className={`leading-relaxed ${i === logs.length - 1 ? 'text-emerald-400 font-bold' : 'text-slate-300'}`}>
+                  <span className="text-blue-500 mr-2">›</span>
+                  {log}
+                  {i === logs.length - 1 && isLoading && (
+                    <motion.span 
+                      animate={{ opacity: [1, 0] }}
+                      transition={{ duration: 0.8, repeat: Infinity }}
+                      className="ml-1 inline-block w-2 h-4 bg-emerald-400 align-middle"
+                    />
+                  )}
+                </span>
               </motion.div>
             ))
           ) : (
-            <div className="text-slate-600 flex flex-col items-center justify-center h-full text-center gap-2">
-              <Loader2 className="w-5 h-5 animate-pulse" />
-              <span>Waiting for execution pulse...</span>
+            <div className="text-slate-600 flex flex-col items-center justify-center h-full text-center gap-3 py-4">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-800 animate-ping" />
+              <span className="text-[11px] uppercase tracking-[0.2em] font-bold">Node idle // Awaiting instruction</span>
             </div>
           )}
         </AnimatePresence>

@@ -25,6 +25,7 @@ import { HistorySection } from './components/HistorySection';
 import { TunnelsSection } from './components/TunnelsSection';
 import { AuditOrchestrator } from './components/AuditOrchestrator';
 import { PerformanceInsights } from './components/PerformanceInsights';
+import { TechStack } from './components/TechStack';
 
 export default function App() {
   // --- State ---
@@ -73,6 +74,7 @@ export default function App() {
   const [isCustomThrottling, setIsCustomThrottling] = useState(false);
   const [isComparisonMode, setIsComparisonMode] = useState(false);
   const [comparisonDeviceIds, setComparisonDeviceIds] = useState<string[]>(['desktop-fhd', 'iphone-14-pro']);
+  const [isCapturing, setIsCapturing] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(-1);
   
   const reportRef = useRef<HTMLDivElement>(null);
@@ -408,8 +410,13 @@ export default function App() {
 
   const captureScreenshot = async () => {
     if (!previewRef.current || !activeUrl) return;
+    
     setIsLoading(true);
+    setIsCapturing(true);
+    setError(null);
+
     try {
+      // 1. Capture high-fidelity screenshot from server
       const response = await fetch('/api/screenshot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -421,33 +428,54 @@ export default function App() {
         })
       });
 
-      if (!response.ok) throw new Error('Failed to fetch capture node from server.');
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Failed to fetch capture node from server.');
+      }
 
       const data = await response.json();
       if (data.error) throw new Error(data.error);
 
+      // 2. Overlay the server-side screenshot in the preview
       setScreenshotPreviewUrl(data.screenshot);
       
-      // Wait for the overlay data URI to render in the DOM
-      await new Promise(resolve => setTimeout(resolve, 400));
+      // 3. Wait for the image to be fully rendered in the DOM
+      // We use a small delay and a check to ensure high-quality render
+      await new Promise(resolve => setTimeout(resolve, 800));
       
+      // 4. Use html2canvas to capture the Realistic frame + overlay
       const canvas = await html2canvas(previewRef.current, { 
-        scale: 2, 
+        scale: 3, // Higher scale for premium quality
         useCORS: true,
         backgroundColor: null,
-        allowTaint: true
+        allowTaint: true,
+        logging: false,
+        onclone: (clonedDoc) => {
+          // Perform any cleanup on the cloned DOM if needed
+          const overlay = clonedDoc.querySelector('img[alt="Screenshot Capture Overlay"]');
+          if (overlay) {
+            (overlay as HTMLImageElement).style.opacity = '1';
+          }
+        }
       });
 
+      // 5. Trigger download
       const link = document.createElement('a');
-      link.download = `responsive-audit-${new Date().getTime()}.png`;
-      link.href = canvas.toDataURL('image/png');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      link.download = `audit-capture-${timestamp}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
+      
     } catch (err: any) {
       console.error('Screenshot Error:', err);
       setError(err.message || 'Failed to capture viewport screenshot.');
     } finally {
-      setScreenshotPreviewUrl(null);
-      setIsLoading(false);
+      // 6. Cleanup
+      setTimeout(() => {
+        setScreenshotPreviewUrl(null);
+        setIsCapturing(false);
+        setIsLoading(false);
+      }, 500);
     }
   };
 
@@ -472,7 +500,10 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen font-sans bg-background selection:bg-brand-primary/10">
+    <div className="flex min-h-screen font-sans bg-background selection:bg-brand-primary/10 overflow-hidden relative">
+      {/* Premium Background Layer */}
+      <div className="mesh-gradient opacity-40" />
+      
       <Sidebar 
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen} 
@@ -570,8 +601,14 @@ export default function App() {
                       savedDevicePresets={savedDevicePresets}
                       savedThrottlingPresets={savedThrottlingPresets}
                       results={results}
+                      isCapturing={isCapturing}
                     />
                   </div>
+                </div>
+
+                {/* Technology Stack / Engine Specs */}
+                <div className="bg-surface border border-border rounded-xl p-8 shadow-sm">
+                  <TechStack detectedTech={results?.detectedTech} isLoading={isLoading} />
                 </div>
 
                 {/* Audit Report Section */}
@@ -884,6 +921,10 @@ export default function App() {
                           ))}
                         </div>
                       )}
+                    </div>
+
+                    <div className="pt-6 border-t border-gray-100">
+                      <TechStack />
                     </div>
 
                     <div className="pt-6 border-t border-gray-100">

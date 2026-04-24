@@ -105,11 +105,11 @@ export const AuditReport: React.FC<AuditReportProps> = ({
   ] : [];
 
   const vitals = results ? [
-    { label: 'FCP', title: 'First Contentful Paint', value: results.details.fcp, status: results.performance > 80 ? 'success' : 'warning' },
-    { label: 'LCP', title: 'Largest Contentful Paint', value: results.details.lcp, status: results.performance > 70 ? 'success' : 'danger' },
-    { label: 'CLS', title: 'Cumulative Layout Shift', value: results.details.cls, status: 'success' },
-    { label: 'TBT', title: 'Total Blocking Time', value: results.details.tbt, status: 'danger' },
-    { label: 'SI', title: 'Speed Index', value: results.details.speedIndex, status: 'warning' },
+    { label: 'FCP', title: 'First Contentful Paint', value: results.details.fcp, status: results.performance > 89 ? 'success' : results.performance > 49 ? 'warning' : 'danger' },
+    { label: 'LCP', title: 'Largest Contentful Paint', value: results.details.lcp, status: results.performance > 89 ? 'success' : results.performance > 49 ? 'warning' : 'danger' },
+    { label: 'CLS', title: 'Cumulative Layout Shift', value: results.details.cls, status: (results.details.cls.localeCompare('0.1') <= 0) ? 'success' : 'danger' },
+    { label: 'TBT', title: 'Total Blocking Time', value: results.details.tbt, status: results.performance > 70 ? 'success' : 'danger' },
+    { label: 'SI', title: 'Speed Index', value: results.details.speedIndex, status: results.performance > 70 ? 'success' : 'warning' },
   ] : [];
 
   return (
@@ -119,17 +119,17 @@ export const AuditReport: React.FC<AuditReportProps> = ({
         {scoreStats.map((stat) => (
           <div key={stat.name} className="flex flex-col items-center gap-4">
             <div 
-              className="w-24 h-24 rounded-full relative flex items-center justify-center p-2 shadow-sm border border-border/50"
+              className="w-24 h-24 rounded-full relative flex items-center justify-center p-2 shadow-sm border border-border/50 group"
               style={{
                 background: `conic-gradient(${stat.color} ${stat.value}%, var(--color-muted) 0)`
               }}
             >
               <div className="absolute inset-2 bg-surface rounded-full shadow-inner" />
-              <span className="relative z-10 text-2xl font-bold tracking-tighter" style={{ color: stat.color }}>
-                {stat.value}
-              </span>
+              <div className="relative z-10 text-2xl font-bold tracking-tighter" style={{ color: stat.color }}>
+                <CountUp value={stat.value} />
+              </div>
             </div>
-            <span className="text-sm font-bold text-foreground/80">{stat.name}</span>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{stat.name}</span>
           </div>
         ))}
       </div>
@@ -297,25 +297,37 @@ export const AuditReport: React.FC<AuditReportProps> = ({
         <div className="space-y-6">
           <h3 className="text-base font-bold mb-6">Automated "Slim" Checklist</h3>
           <div className="space-y-4">
-             {[
-               { title: 'Responsive Images', status: 'fail', desc: 'Checks if images have multiple resolutions.', how: 'Implement srcset and sizes attributes.' },
-               { title: 'Text Compression', status: 'fail', desc: 'Checks if text assets are Gzip/Brotli compressed.', how: 'Enable Gzip or Brotli on your server.' },
-               { title: 'Modern Image Formats', status: 'warning', desc: 'Checks if images are in WebP/AVIF.', how: 'Convert JPEG/PNG images to WebP.' },
-             ].map((item, i) => (
-               <div key={i} className="border border-border p-6 rounded-xl space-y-4">
-                 <div className="flex items-start gap-4">
-                   {item.status === 'fail' ? <AlertCircle className="w-5 h-5 text-red-500 shrink-0" /> : <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />}
-                   <div>
-                     <p className="text-sm font-bold mb-1">{item.title}</p>
-                     <p className="text-xs text-muted-foreground font-medium leading-relaxed">{item.desc}</p>
+             {(results?.slimChecklist || []).length > 0 ? (
+               results?.slimChecklist?.map((item, i) => (
+                 <motion.div 
+                   key={item.id} 
+                   initial={{ opacity: 0, x: 20 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   transition={{ delay: i * 0.1 }}
+                   className="border border-border p-6 rounded-xl space-y-4 bg-surface shadow-sm group hover:border-brand-primary/20 transition-all"
+                 >
+                   <div className="flex items-start gap-4">
+                     {item.status === 'pass' ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                     ) : (
+                        <AlertCircle className={`w-5 h-5 ${item.status === 'fail' ? 'text-red-500' : 'text-amber-500'} shrink-0`} />
+                     )}
+                     <div>
+                       <p className="text-sm font-bold mb-1">{item.label}</p>
+                       <p className="text-xs text-muted-foreground font-medium leading-relaxed">{item.description}</p>
+                     </div>
                    </div>
-                 </div>
-                 <div className="bg-muted p-4 rounded-lg flex flex-col gap-1 border border-border/50">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-foreground">How to Slim:</span>
-                    <span className="text-xs font-medium text-muted-foreground">{item.how}</span>
-                 </div>
+                   <div className="bg-muted p-4 rounded-lg flex flex-col gap-1 border border-border/50 group-hover:bg-brand-primary/[0.02] transition-colors">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-foreground">Remedy:</span>
+                      <span className="text-xs font-medium text-muted-foreground">{item.remedy}</span>
+                   </div>
+                 </motion.div>
+               ))
+             ) : (
+               <div className="p-12 border border-dashed border-border rounded-xl text-center text-muted-foreground">
+                  <p className="text-xs font-bold uppercase tracking-widest">No slim specific data captured.</p>
                </div>
-             ))}
+             )}
           </div>
         </div>
       </div>

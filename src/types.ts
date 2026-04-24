@@ -1,5 +1,11 @@
 export type DeviceCategory = 'mobile' | 'tablet' | 'desktop' | 'custom';
 
+export interface DetectedTech {
+  category: string;
+  name: string;
+  confidence: number;
+}
+
 export interface DeviceConfig {
   id: string;
   name: string;
@@ -45,6 +51,7 @@ export interface LighthouseResult {
   assets?: AssetInfo[];
   performanceMetrics?: PerformanceMetrics;
   slimChecklist?: SlimChecklistItem[];
+  detectedTech?: DetectedTech[];
   responsivenessChecks?: {
     loadTime: string;
     pageSize: string;

@@ -1,0 +1,71 @@
+{
+  "WordPress": {
+    "category": "CMS",
+    "html": ["wp-content", "wp-includes", "<meta name=\"generator\" content=\"WordPress"],
+    "headers": { "x-pingback": "" },
+    "scripts": ["wp-emoji-release"]
+  },
+  "Shopify": {
+    "category": "CMS",
+    "html": ["cdn.shopify.com", "<meta name=\"generator\" content=\"Shopify"],
+    "scripts": ["shopify"],
+    "globals": ["Shopify"]
+  },
+  "React": {
+    "category": "JavaScript frameworks",
+    "html": ["data-reactroot"],
+    "scripts": ["react.production.min.js", "react-dom.production.min.js"],
+    "globals": ["__REACT_DEVTOOLS_GLOBAL_HOOK__"]
+  },
+  "Next.js": {
+    "category": "JavaScript frameworks",
+    "html": ["__next"],
+    "globals": ["__NEXT_DATA__"]
+  },
+  "Vue.js": {
+    "category": "JavaScript frameworks",
+    "html": ["data-v-"],
+    "globals": ["__VUE__"]
+  },
+  "Angular": {
+    "category": "JavaScript frameworks",
+    "html": ["ng-version", "ng-app"]
+  },
+  "Google Analytics": {
+    "category": "Analytics",
+    "scripts": ["google-analytics.com", "googletagmanager.com/gtag"],
+    "globals": ["ga", "gtag"]
+  },
+  "Google Tag Manager": {
+    "category": "Analytics",
+    "scripts": ["googletagmanager.com/gtm.js"]
+  },
+  "HubSpot": {
+    "category": "Marketing tools",
+    "scripts": ["js.hs-scripts.com", "hubspot"]
+  },
+  "Cloudflare": {
+    "category": "CDN",
+    "headers": { "server": "cloudflare", "cf-ray": "" }
+  },
+  "AWS CloudFront": {
+    "category": "CDN",
+    "headers": { "x-amz-cf-id": "" }
+  },
+  "Nginx": {
+    "category": "Web servers",
+    "headers": { "server": "nginx" }
+  },
+  "Express": {
+    "category": "Web frameworks",
+    "headers": { "x-powered-by": "express" }
+  },
+  "Tailwind CSS": {
+    "category": "UI frameworks",
+    "html": ["tailwindcss", "class=\"tw-", "class=\"bg-", "class=\"text-"]
+  },
+  "Framer Motion": {
+    "category": "JavaScript libraries",
+    "html": ["framer-motion"]
+  }
+}

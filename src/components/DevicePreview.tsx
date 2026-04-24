@@ -67,6 +67,7 @@ interface DevicePreviewProps {
   savedDevicePresets: DeviceConfig[];
   savedThrottlingPresets: SavedThrottlingPreset[];
   results: LighthouseResult | null;
+  isCapturing: boolean;
 }
 
 export const DevicePreview: React.FC<DevicePreviewProps> = ({
@@ -104,7 +105,8 @@ export const DevicePreview: React.FC<DevicePreviewProps> = ({
   setIsCustomThrottling,
   savedDevicePresets,
   savedThrottlingPresets,
-  results
+  results,
+  isCapturing
 }) => {
   const [iframeError, setIframeError] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -193,10 +195,17 @@ export const DevicePreview: React.FC<DevicePreviewProps> = ({
           
           <button 
             onClick={() => captureScreenshot()}
-            disabled={isLoading || !activeUrl}
-            className="p-2 bg-surface border border-border rounded-lg text-muted-foreground hover:text-foreground transition-all shadow-sm disabled:opacity-30"
+            disabled={isLoading || !activeUrl || isCapturing}
+            className={`p-2 bg-surface border border-border rounded-lg text-muted-foreground hover:text-foreground transition-all shadow-sm disabled:opacity-30 relative group overflow-hidden`}
           >
-            <Camera className="w-4 h-4" />
+            {isCapturing ? (
+              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+            ) : (
+              <Camera className="w-4 h-4 translate-y-0 group-hover:-translate-y-1 transition-transform" />
+            )}
+            {isCapturing && (
+              <span className="absolute inset-0 bg-blue-500/5 animate-pulse" />
+            )}
           </button>
         </div>
       </div>
@@ -268,9 +277,31 @@ export const DevicePreview: React.FC<DevicePreviewProps> = ({
               )}
 
               {isSimulatingLoading && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-8 text-center">
-                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-4" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Throttling: {networkSpeed.toUpperCase()}</p>
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center">
+                  <div className="relative mb-6">
+                    <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                    <div className="absolute inset-0 bg-blue-500/20 blur-xl animate-pulse" />
+                  </div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-blue-600 mb-1">Engaging Simulation</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">{networkSpeed.replace(/-/g, ' ')} Active</p>
+                </div>
+              )}
+
+              {isCapturing && (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-[70] flex flex-col items-center justify-center text-white">
+                  <div className="relative mb-4">
+                    <Camera className="w-8 h-8 animate-bounce" />
+                    <div className="absolute inset-0 bg-white/40 blur-2xl animate-pulse" />
+                  </div>
+                  <p className="text-xs font-bold uppercase tracking-[0.4em] animate-pulse">Capturing Frame</p>
+                  <div className="mt-4 w-32 h-1 bg-white/10 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ x: '-100%' }}
+                      animate={{ x: '100%' }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                      className="w-full h-full bg-blue-500"
+                    />
+                  </div>
                 </div>
               )}
 
